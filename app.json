@@ -44,13 +44,7 @@
       },
       "eas": {
         "projectId": "dfed14fd-36f8-4fb3-ab9a-fb4be37cc419"
-      },
-      "firebaseApiKey": "AIzaSyDfxYZ7DmTPhlQpELgMk3kPMBg8PeMFhbM",
-      "firebaseAuthDomain": "resqmate-c2d11.firebaseapp.com",
-      "firebaseProjectId": "resqmate-c2d11",
-      "firebaseStorageBucket": "resqmate-c2d11.appspot.com",
-      "firebaseMessagingSenderId": "996199384700",
-      "firebaseAppId": "1:996199384700:web:6877b372ef8ad5fb29abf9"
+      }
     },
     "owner": "shaun_s_david"
   }
