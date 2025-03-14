@@ -23,7 +23,7 @@ type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   ProfilePage: undefined;
-  EditInfo: undefined;
+  EditInfo: { from?: string };
   Dashboard: undefined;
   Chatbot: undefined;
 };
@@ -162,7 +162,7 @@ const ProfilePage = () => {
             flexDirection: "row",
             alignItems: "center",
           }}
-          onPress={() => navigation.navigate("EditInfo")}
+          onPress={() => navigation.navigate("EditInfo", { from: "profile" })}
         >
           <Text style={{ fontSize: 16, color: "#333" }}>Edit Information</Text>
         </TouchableOpacity>
