@@ -16,6 +16,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 type RootStackParamList = {
   Login: undefined;
   Register: undefined;
+  EditInfo: { from?: string };
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "Register">;
@@ -47,7 +48,7 @@ const RegisterScreen = () => {
           form.password
         );
         Alert.alert("Success", "Registration successful!");
-        navigation.navigate("Login");
+        navigation.navigate("EditInfo", { from: "register" });
       } catch (error: any) {
         alert("Register failed: " + error.message);
       } finally {
