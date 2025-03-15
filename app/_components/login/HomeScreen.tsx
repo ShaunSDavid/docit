@@ -15,8 +15,8 @@ import { StackNavigationProp } from "@react-navigation/stack";
 
 type RootStackParamList = {
   Home: undefined;
-  Login: undefined;
-  Register: undefined;
+  PatientScreen: undefined;
+  DoctorLogin: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "Home">;
@@ -57,16 +57,16 @@ const HomeScreen = () => {
           </Text>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => navigation.navigate("Login")}
+            onPress={() => navigation.navigate("DoctorLogin")}
           >
-            <Text style={styles.buttonText}>Login</Text>
+            <Text style={styles.buttonText}>Doctor</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, styles.signupButton]}
-            onPress={() => navigation.navigate("Register")}
+            onPress={() => navigation.navigate("PatientScreen")}
           >
             <Text style={[styles.buttonText, styles.signupButtonText]}>
-              Sign Up
+              Patient
             </Text>
           </TouchableOpacity>
         </View>
