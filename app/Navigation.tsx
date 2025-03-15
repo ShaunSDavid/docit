@@ -7,18 +7,17 @@ import Dashboard from "./_components/dashboard/Dashboard";
 import ProfilePage from "./_components/profile/ProfilePage";
 import EditInfo from "./_components/profile/EditInfo";
 import MapScreen from "./_components/location/MapScreen";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { FIREBASE_AUTH } from "@/FirebaseConfig";
+import PatientScreen from "./_components/login/PatientScreen";
+import DoctorLogin from "./_components/login/DoctorLogin";
+import DoctorDashboard from "./_components/doctor/DoctorDashboard";
+import ConnectPatient from "./_components/doctor/ConnectPatient";
+import PatientDetails from "./_components/doctor/PatientDetails";
+import DoctorProfile from "./_components/doctor/DoctorProfile";
+import EditProfile from "./_components/doctor/EditProfile";
 
 const Stack = createStackNavigator();
 
 const EntryNavigation = () => {
-  // const [user, setUser] = useState<User | null>(null);
-  // useEffect(() => {
-  //   onAuthStateChanged(FIREBASE_AUTH, (user) => {
-  //     setUser(user);
-  //   });
-  // }, []);
   return (
     <Stack.Navigator
       initialRouteName="Home"
@@ -27,6 +26,13 @@ const EntryNavigation = () => {
       }}
     >
       <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="DoctorLogin" component={DoctorLogin} />
+      <Stack.Screen name="PatientScreen" component={PatientScreen} />
+      <Stack.Screen name="DoctorDashboard" component={DoctorDashboard} />
+      <Stack.Screen name="ConnectPatient" component={ConnectPatient} />
+      <Stack.Screen name="PatientDetails" component={PatientDetails} />
+      <Stack.Screen name="DoctorProfile" component={DoctorProfile} />
+      <Stack.Screen name="EditProfile" component={EditProfile} />
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="Dashboard" component={Dashboard} />
