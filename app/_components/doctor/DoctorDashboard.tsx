@@ -7,7 +7,6 @@ import {
   Dimensions,
   StatusBar,
   ActivityIndicator,
-  TextInput,
   FlatList,
   Alert,
 } from "react-native";
@@ -45,56 +44,85 @@ type Patient = {
 
 const DoctorDashboard = () => {
   const navigation = useNavigation<NavigationProp>();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [doctorName, setDoctorName] = useState("");
 
   // Fetch connected patients from Firestore
   useEffect(() => {
     const fetchPatients = async () => {
-      setLoading(true);
       try {
         const db = getFirestore();
         const currentUser = FIREBASE_AUTH.currentUser;
 
-        if (currentUser) {
-          // Query for patients connected to this doctor
-          const doctorRef = collection(db, "doctors");
-          const doctorQuery = query(
-            doctorRef,
-            where("email", "==", currentUser.email)
-          );
+        if (!currentUser) {
+          console.log("No current user found");
+          setLoading(false);
+          return;
+        }
 
-          const doctorSnapshot = await getDocs(doctorQuery);
-          if (!doctorSnapshot.empty) {
-            const doctorDoc = doctorSnapshot.docs[0];
-            const connectedPatients = doctorDoc.data().connectedPatients || [];
+        console.log("Current user email:", currentUser.email);
 
-            // Fetch patient details
-            const patientData: Patient[] = [];
-            for (const patientId of connectedPatients) {
-              const patientRef = collection(db, "users");
-              const patientQuery = query(
-                patientRef,
-                where("id", "==", patientId)
-              );
+        // Get the doctor document
+        const doctorsRef = collection(db, "doctors");
+        const doctorQuery = query(
+          doctorsRef,
+          where("email", "==", currentUser.email)
+        );
 
-              const patientSnapshot = await getDocs(patientQuery);
-              if (!patientSnapshot.empty) {
-                const patient = patientSnapshot.docs[0].data();
-                patientData.push({
-                  id: patientId,
-                  name: patient.name || "Unknown",
-                  email: patient.email || "No email",
-                });
-              }
-            }
+        const doctorSnapshot = await getDocs(doctorQuery);
 
-            setPatients(patientData);
+        if (doctorSnapshot.empty) {
+          console.log("No doctor document found");
+          setLoading(false);
+          return;
+        }
+
+        const doctorDoc = doctorSnapshot.docs[0].data();
+        setDoctorName(doctorDoc.name || "Doctor");
+
+        // Get connected patients
+        const connectedPatients = doctorDoc.connectedPatients || [];
+        console.log("Connected patients:", connectedPatients);
+
+        if (connectedPatients.length === 0) {
+          console.log("No connected patients");
+          setLoading(false);
+          return;
+        }
+
+        // Fetch details for each patient email
+        const patientsList: Patient[] = [];
+
+        for (const patientEmail of connectedPatients) {
+          // Query for user with this email
+          const usersRef = collection(db, "users");
+          const userQuery = query(usersRef, where("email", "==", patientEmail));
+
+          const userSnapshot = await getDocs(userQuery);
+
+          if (!userSnapshot.empty) {
+            const userData = userSnapshot.docs[0].data();
+            patientsList.push({
+              id: userSnapshot.docs[0].id,
+              name: userData.name || "Patient",
+              email: patientEmail,
+            });
+          } else {
+            // If user doc not found, still add with the email
+            patientsList.push({
+              id: patientEmail,
+              name: "Patient",
+              email: patientEmail,
+            });
           }
         }
+
+        console.log("Patients list:", patientsList);
+        setPatients(patientsList);
       } catch (error: any) {
         console.error("Error fetching patients:", error);
-        Alert.alert("Error", "Failed to load patient data");
+        Alert.alert("Error", "Failed to load patient data: " + error.message);
       } finally {
         setLoading(false);
       }
@@ -107,7 +135,9 @@ const DoctorDashboard = () => {
     <TouchableOpacity
       style={styles.patientCard}
       onPress={() =>
-        navigation.navigate("PatientDetails", { patientId: item.id })
+        navigation.navigate("PatientDetails", {
+          patientId: item.email,
+        })
       }
     >
       <View style={styles.avatarContainer}>
@@ -129,7 +159,9 @@ const DoctorDashboard = () => {
 
       {/* Header Section */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Doctor Dashboard</Text>
+        <Text style={styles.headerTitle}>
+          {doctorName ? `Dr. ${doctorName}'s Dashboard` : "Doctor Dashboard"}
+        </Text>
       </View>
 
       {/* Connect Button */}
@@ -160,7 +192,7 @@ const DoctorDashboard = () => {
           <FlatList
             data={patients}
             renderItem={renderPatientCard}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id || item.email}
             contentContainerStyle={styles.patientList}
           />
         ) : (
@@ -174,32 +206,16 @@ const DoctorDashboard = () => {
         )}
       </View>
 
-      {/* Log Out Button */}
-      <View style={styles.logoutContainer}>
-        {loading ? (
-          <ActivityIndicator size="large" color="#0F6D66" />
-        ) : (
-          <TouchableOpacity
-            style={styles.button}
-            onPress={async () => {
-              setLoading(true);
-              try {
-                await FIREBASE_AUTH.signOut();
-                navigation.replace("Home");
-              } catch (error: any) {
-                Alert.alert("Error", "Logout failed: " + error.message);
-              } finally {
-                setLoading(false);
-              }
-            }}
-          >
-            <Text style={styles.buttonText}>Logout</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
       {/* Bottom Navigation Bar */}
       <View style={styles.bottomNav}>
+        <TouchableOpacity
+          style={styles.navButton}
+          onPress={() => navigation.navigate("ConnectPatient")}
+        >
+          <FontAwesome name="users" size={24} color="#999999" />
+          <Text style={styles.navText}>Patients</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.navButton}>
           <FontAwesome name="home" size={24} color="#0F6D66" />
           <Text style={styles.activeNavText}>Dashboard</Text>
@@ -209,8 +225,8 @@ const DoctorDashboard = () => {
           style={styles.navButton}
           onPress={() => navigation.navigate("DoctorProfile")}
         >
-          <FontAwesome name="user-o" size={24} color="#999999" />
-          <Text style={styles.navText}>Mine</Text>
+          <FontAwesome name="user-md" size={24} color="#999999" />
+          <Text style={styles.navText}>Profile</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -294,15 +310,6 @@ const styles = StyleSheet.create({
     color: "#666666",
     marginTop: 2,
   },
-  patientDetails: {
-    flexDirection: "row",
-    marginTop: 5,
-  },
-  patientDetail: {
-    fontSize: 13,
-    color: "#888888",
-    marginRight: 10,
-  },
   arrowContainer: {
     justifyContent: "center",
     paddingLeft: 10,
@@ -327,22 +334,6 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: 30,
-  },
-  logoutContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  button: {
-    width: "100%",
-    padding: 15,
-    backgroundColor: "#0F6D66",
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold",
   },
   bottomNav: {
     flexDirection: "row",
