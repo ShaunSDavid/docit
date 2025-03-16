@@ -51,11 +51,24 @@ const PatientDetails = () => {
   useEffect(() => {
     const fetchPatientDetails = async () => {
       try {
+        // Add debugging logs
+        console.log("Attempting to fetch details for patient ID:", patientId);
+
+        if (!patientId) {
+          throw new Error("Patient ID is undefined or empty");
+        }
+
         const db = getFirestore();
-        const patientDoc = await getDoc(doc(db, "users", patientId));
+        // Use the patientId directly as the document ID, since that seems to be the pattern in your logs
+        const patientDocRef = doc(db, "users", patientId);
+        console.log("Fetching document at path:", `users/${patientId}`);
+
+        const patientDoc = await getDoc(patientDocRef);
 
         if (patientDoc.exists()) {
           const data = patientDoc.data();
+          console.log("Patient data retrieved:", data);
+
           setPatient({
             id: patientDoc.id,
             name: data.name || "Unknown",
@@ -72,12 +85,16 @@ const PatientDetails = () => {
             },
           });
         } else {
+          console.log("Patient document does not exist");
           Alert.alert("Error", "Patient not found");
           navigation.goBack();
         }
       } catch (error: any) {
         console.error("Error fetching patient details:", error);
-        Alert.alert("Error", "Failed to load patient details");
+        Alert.alert(
+          "Error",
+          `Failed to load patient details: ${error.message}`
+        );
       } finally {
         setLoading(false);
       }
