@@ -8,14 +8,26 @@ import {
   Dimensions,
   StatusBar,
   ActivityIndicator,
-  Image,
+  Modal,
+  FlatList,
+  Alert,
 } from "react-native";
 const { width } = Dimensions.get("window");
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { FIREBASE_AUTH } from "@/FirebaseConfig";
-// Uncomment this when you have Firebase database set up
-// import { getDatabase, ref, onValue } from "firebase/database";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  arrayUnion,
+} from "firebase/firestore";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 type RootStackParamList = {
@@ -31,9 +43,24 @@ type RootStackParamList = {
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "Dashboard">;
 
+interface ConnectionRequest {
+  id: string;
+  doctorName: string;
+  doctorEmail: string;
+  patientId: string;
+  doctorId: string;
+  status: string;
+  createdAt: any;
+}
+
 const Dashboard = () => {
   const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(false);
+  const [connectionRequests, setConnectionRequests] = useState<
+    ConnectionRequest[]
+  >([]);
+  const [isConnectionRequestModalVisible, setConnectionRequestModalVisible] =
+    useState(false);
   const [healthData, setHealthData] = useState({
     heartRate: "No data available",
     bloodPressure: "No data available",
@@ -41,29 +68,154 @@ const Dashboard = () => {
     bloodGlucose: "No data available",
   });
 
-  // Effect for fetching data from Firebase
   useEffect(() => {
-    // Uncomment and implement when Firebase is ready
-    /*
-    const db = getDatabase();
-    const healthRef = ref(db, 'healthMetrics');
-    
-    const unsubscribe = onValue(healthRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setHealthData({
-          heartRate: data.heartRate || "No data available",
-          bloodPressure: data.bloodPressure || "No data available",
-          bloodOxygen: data.bloodOxygen || "No data available",
-          bloodGlucose: data.bloodGlucose || "No data available",
-        });
+    const fetchConnectionRequests = async () => {
+      const currentUser = FIREBASE_AUTH.currentUser;
+      if (!currentUser) {
+        console.log("No current user found");
+        return;
       }
-    });
-    
-    // Clean up listener on unmount
-    return () => unsubscribe();
-    */
+
+      const db = getFirestore();
+      const requestsRef = collection(db, "connectionRequests");
+
+      // Debug: Log the current user's UID
+      console.log("Current User UID:", currentUser.uid);
+
+      const q = query(
+        requestsRef,
+        where("patientEmail", "==", currentUser.email)
+      );
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          console.log("Snapshot size:", snapshot.size);
+
+          const requests = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            console.log("Connection Request Data:", data);
+            return {
+              id: doc.id,
+              ...data,
+            } as ConnectionRequest;
+          });
+
+          setConnectionRequests(requests);
+
+          // Show modal if there are new requests
+          if (requests.length > 0) {
+            console.log("Connection requests found:", requests);
+            setConnectionRequestModalVisible(true);
+          }
+        },
+        (error) => {
+          console.error("Error fetching connection requests:", error);
+        }
+      );
+
+      return () => unsubscribe();
+    };
+
+    fetchConnectionRequests();
   }, []);
+
+  const handleConnectionRequest = async (
+    requestId: string,
+    accept: boolean
+  ) => {
+    setLoading(true);
+    try {
+      const db = getFirestore();
+      const currentUser = FIREBASE_AUTH.currentUser;
+
+      if (!currentUser) {
+        Alert.alert("Error", "User not authenticated");
+        return;
+      }
+
+      const requestDoc = doc(db, "connectionRequests", requestId);
+
+      // Fetch the request document directly
+      const requestSnapshot = await getDocs(
+        query(
+          collection(db, "connectionRequests"),
+          where("__name__", "==", requestId)
+        )
+      );
+
+      if (requestSnapshot.empty) {
+        Alert.alert("Error", "Connection request not found.");
+        return;
+      }
+
+      const requestData = requestSnapshot.docs[0].data();
+
+      if (accept) {
+        // Update patient's connected doctors
+        const patientEmail = currentUser.email;
+        if (!patientEmail) {
+          Alert.alert("Error", "User email not found");
+          return;
+        }
+        const patientDocRef = doc(db, "users", patientEmail);
+        try {
+          await updateDoc(patientDocRef, {
+            connectedDoctors: arrayUnion(requestData.doctorId),
+          });
+        } catch (error) {
+          console.error("Error updating patient document:", error);
+          const usersRef = collection(db, "users");
+          const patientQuery = query(
+            usersRef,
+            where("email", "==", patientEmail)
+          );
+          const patientSnapshot = await getDocs(patientQuery);
+
+          if (patientSnapshot.empty) {
+            Alert.alert("Error", "Patient document not found");
+            return;
+          }
+
+          // Use the document ID found from the query
+          const patientDocId = patientSnapshot.docs[0].id;
+          const altPatientDocRef = doc(db, "users", patientDocId);
+
+          await updateDoc(altPatientDocRef, {
+            connectedDoctors: arrayUnion(requestData.doctorId),
+          });
+        }
+        // await updateDoc(patientDocRef, {
+        //   connectedDoctors: arrayUnion(requestData.doctorId),
+        // });
+
+        // Update doctor's connected patients
+        const doctorDocRef = doc(db, "doctors", requestData.doctorId);
+        await updateDoc(doctorDocRef, {
+          connectedPatients: arrayUnion(currentUser.uid),
+        });
+
+        Alert.alert(
+          "Success",
+          `You are now connected with Dr. ${requestData.doctorName}`
+        );
+      } else {
+        Alert.alert(
+          "Connection Declined",
+          `You have declined the connection request from Dr. ${requestData.doctorName}`
+        );
+      }
+
+      // Remove the connection request
+      await deleteDoc(requestDoc);
+    } catch (error) {
+      console.error("Error handling connection request:", error);
+      Alert.alert("Error", "Failed to process the connection request.");
+    } finally {
+      setLoading(false);
+      setConnectionRequestModalVisible(false);
+    }
+  };
 
   const healthMetrics = [
     {
@@ -96,15 +248,77 @@ const Dashboard = () => {
     },
   ];
 
+  const renderConnectionRequestModal = () => (
+    <Modal
+      visible={isConnectionRequestModalVisible}
+      transparent={true}
+      animationType="slide"
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Connection Requests</Text>
+          <FlatList
+            data={connectionRequests}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.requestCard}>
+                <View style={styles.requestInfo}>
+                  <Text style={styles.doctorName}>Dr. {item.doctorName}</Text>
+                  <Text style={styles.doctorEmail}>{item.doctorEmail}</Text>
+                </View>
+                <View style={styles.requestActions}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.acceptButton]}
+                    onPress={() => handleConnectionRequest(item.id, true)}
+                    disabled={loading}
+                  >
+                    <Text style={styles.actionButtonText}>Accept</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.declineButton]}
+                    onPress={() => handleConnectionRequest(item.id, false)}
+                    disabled={loading}
+                  >
+                    <Text style={styles.actionButtonText}>Decline</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          />
+          <TouchableOpacity
+            style={styles.closeModalButton}
+            onPress={() => setConnectionRequestModalVisible(false)}
+          >
+            <Text style={styles.closeModalButtonText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#0F6D66" barStyle="light-content" />
 
+      {/* Connection Request Modal */}
+      {renderConnectionRequestModal()}
+
       {/* Header Section */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Dashboard</Text>
+        {connectionRequests.length > 0 && (
+          <TouchableOpacity
+            style={styles.connectionBadge}
+            onPress={() => setConnectionRequestModalVisible(true)}
+          >
+            <Text style={styles.connectionBadgeText}>
+              {connectionRequests.length}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
+      {/* Rest of the existing dashboard code remains the same */}
       {/* Health Metrics Cards */}
       <View style={styles.metricsContainer}>
         {healthMetrics.map((metric) => (
@@ -154,7 +368,7 @@ const Dashboard = () => {
         )}
       </View>
 
-      {/* Bottom Navigation Bar - Updated to match the image */}
+      {/* Bottom Navigation Bar */}
       <View style={styles.bottomNav}>
         <TouchableOpacity
           style={styles.navButton}
@@ -282,6 +496,92 @@ const styles = StyleSheet.create({
     color: "#0F6D66",
     fontWeight: "bold",
     marginTop: 4,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalContent: {
+    width: "90%",
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    maxHeight: "70%",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  requestCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  requestInfo: {
+    flex: 1,
+    marginRight: 10,
+  },
+  doctorName: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  doctorEmail: {
+    fontSize: 14,
+    color: "#666",
+  },
+  requestActions: {
+    flexDirection: "row",
+  },
+  actionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 5,
+    marginLeft: 5,
+  },
+  acceptButton: {
+    backgroundColor: "#0F6D66",
+  },
+  declineButton: {
+    backgroundColor: "#FF6B6B",
+  },
+  actionButtonText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  closeModalButton: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: "#0F6D66",
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  closeModalButtonText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  connectionBadge: {
+    backgroundColor: "red",
+    borderRadius: 15,
+    width: 25,
+    height: 25,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
+    right: 20,
+    top: 40,
+  },
+  connectionBadgeText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 12,
   },
 });
 
