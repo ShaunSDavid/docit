@@ -192,7 +192,7 @@ const Dashboard = () => {
         // Update doctor's connected patients
         const doctorDocRef = doc(db, "doctors", requestData.doctorId);
         await updateDoc(doctorDocRef, {
-          connectedPatients: arrayUnion(currentUser.uid),
+          connectedPatients: arrayUnion(currentUser.email),
         });
 
         Alert.alert(

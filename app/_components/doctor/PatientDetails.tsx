@@ -7,10 +7,21 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  collection,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 type RootStackParamList = {
@@ -47,6 +58,11 @@ const PatientDetails = () => {
     condition?: string;
     healthData?: HealthData;
   } | null>(null);
+
+  // Message modal state
+  const [messageModalVisible, setMessageModalVisible] = useState(false);
+  const [messageText, setMessageText] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
     const fetchPatientDetails = async () => {
@@ -102,6 +118,50 @@ const PatientDetails = () => {
 
     fetchPatientDetails();
   }, [patientId]);
+
+  const handleSendMessage = async () => {
+    if (!messageText.trim()) {
+      Alert.alert("Error", "Please enter a message");
+      return;
+    }
+
+    if (!patient) {
+      Alert.alert("Error", "Patient information is missing");
+      return;
+    }
+
+    setSendingMessage(true);
+
+    try {
+      const db = getFirestore();
+
+      // Get the current doctor's email (assuming it's stored somewhere, possibly in auth)
+      // For now, I'll use a placeholder - you should replace this with actual doctor info
+      const doctorEmail = "doc@gmail.com"; // Replace with actual authenticated doctor email
+
+      // Add the message to a messages collection
+      await addDoc(collection(db, "messages"), {
+        from: doctorEmail,
+        to: patient.id,
+        content: messageText,
+        timestamp: serverTimestamp(),
+        read: false,
+        fromType: "doctor",
+        toType: "patient",
+      });
+
+      // Clear the message input and close the modal
+      setMessageText("");
+      setMessageModalVisible(false);
+
+      Alert.alert("Success", `Message sent to ${patient.name}`);
+    } catch (error: any) {
+      console.error("Error sending message:", error);
+      Alert.alert("Error", `Failed to send message: ${error.message}`);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
 
   const healthMetrics = [
     {
@@ -220,7 +280,10 @@ const PatientDetails = () => {
 
           {/* Action Buttons */}
           <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setMessageModalVisible(true)}
+            >
               <FontAwesome
                 name="comment"
                 size={20}
@@ -257,6 +320,61 @@ const PatientDetails = () => {
           </View>
         </ScrollView>
       )}
+
+      {/* Message Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={messageModalVisible}
+        onRequestClose={() => setMessageModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalContainer}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Message to {patient?.name}</Text>
+              <TouchableOpacity
+                onPress={() => setMessageModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <FontAwesome name="times" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={styles.messageInput}
+              placeholder="Type your message here..."
+              value={messageText}
+              onChangeText={setMessageText}
+              multiline
+              numberOfLines={5}
+              textAlignVertical="top"
+            />
+
+            <TouchableOpacity
+              style={styles.sendButton}
+              onPress={handleSendMessage}
+              disabled={sendingMessage}
+            >
+              {sendingMessage ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <FontAwesome
+                    name="paper-plane"
+                    size={18}
+                    color="#FFFFFF"
+                    style={styles.sendIcon}
+                  />
+                  <Text style={styles.sendButtonText}>Send Message</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
@@ -438,6 +556,62 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     textAlign: "center",
     padding: 20,
+  },
+  // Message Modal Styles
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333333",
+  },
+  closeButton: {
+    padding: 5,
+  },
+  messageInput: {
+    borderWidth: 1,
+    borderColor: "#DDDDDD",
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 120,
+    fontSize: 16,
+  },
+  sendButton: {
+    backgroundColor: "#0F6D66",
+    borderRadius: 8,
+    padding: 15,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 15,
+  },
+  sendIcon: {
+    marginRight: 10,
+  },
+  sendButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 
