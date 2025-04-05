@@ -17,6 +17,7 @@ type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Dashboard: undefined;
+  MPU: undefined;
 };
 type NavigationProp = StackNavigationProp<RootStackParamList, "Login">;
 
@@ -39,7 +40,7 @@ const LoginScreen = () => {
     setLoading(true);
     try {
       const response = await signInWithEmailAndPassword(auth, email, password);
-      navigation.navigate("Dashboard");
+      navigation.navigate("MPU");
     } catch (error: any) {
       alert("Signin failed: " + error.message);
     } finally {
