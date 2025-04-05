@@ -15,8 +15,7 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "package": "com.shaun_s_david.resqmate"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -24,15 +23,6 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-    ],
-    "extra": {
-      "router": {
-        "origin": false
-      },
-      "eas": {
-        "projectId": "dfed14fd-36f8-4fb3-ab9a-fb4be37cc419"
-      }
-    },
-    "owner": "shaun_s_david"
+    ]
   }
 }

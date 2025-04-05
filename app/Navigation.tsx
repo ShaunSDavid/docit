@@ -14,6 +14,7 @@ import ConnectPatient from "./_components/doctor/ConnectPatient";
 import PatientDetails from "./_components/doctor/PatientDetails";
 import DoctorProfile from "./_components/doctor/DoctorProfile";
 import EditProfile from "./_components/doctor/EditProfile";
+import SensorDataScreen from "./_components/dashboard/MPU";
 
 const Stack = createStackNavigator();
 
@@ -36,6 +37,7 @@ const EntryNavigation = () => {
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="Dashboard" component={Dashboard} />
+      <Stack.Screen name="MPU" component={SensorDataScreen} />
       <Stack.Screen name="ProfilePage" component={ProfilePage} />
       <Stack.Screen name="EditInfo" component={EditInfo} />
       <Stack.Screen name="Map" component={MapScreen} />
