@@ -346,8 +346,11 @@ const Dashboard = () => {
       {/* Header Section */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Dashboard</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("SOS")} style={{paddingHorizontal: 20, }}>
-            <MaterialIcons name="sos" size={25} color="black" />
+        <TouchableOpacity
+          onPress={() => navigation.navigate("SOS")}
+          style={{ paddingHorizontal: 20 }}
+        >
+          <MaterialIcons name="sos" size={25} color="black" />
         </TouchableOpacity>
         {connectionRequests.length > 0 && (
           <TouchableOpacity
