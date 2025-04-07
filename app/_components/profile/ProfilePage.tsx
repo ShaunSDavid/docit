@@ -26,6 +26,7 @@ type RootStackParamList = {
   EditInfo: { from?: string };
   Dashboard: undefined;
   Chatbot: undefined;
+  DoctorMessages: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "ProfilePage">;
@@ -165,6 +166,20 @@ const ProfilePage = () => {
           onPress={() => navigation.navigate("EditInfo", { from: "profile" })}
         >
           <Text style={{ fontSize: 16, color: "#333" }}>Edit Information</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#fff",
+            padding: 15,
+            borderRadius: 10,
+            marginBottom: 15,
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+          onPress={() => navigation.navigate("DoctorMessages")}
+        >
+          <Text style={{ fontSize: 16, color: "#333" }}>Doctor Messages</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

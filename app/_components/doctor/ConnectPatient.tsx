@@ -23,6 +23,8 @@ import {
   doc,
   updateDoc,
   arrayUnion,
+  addDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 
@@ -84,7 +86,7 @@ const ConnectPatient = () => {
     }
   };
 
-  const connectWithPatient = async () => {
+  const sendConnectionRequest = async () => {
     if (!foundPatient) return;
 
     setLoading(true);
@@ -93,11 +95,30 @@ const ConnectPatient = () => {
       const currentUser = FIREBASE_AUTH.currentUser;
 
       if (!currentUser) {
-        Alert.alert("Error", "You must be logged in to connect with patients.");
+        Alert.alert(
+          "Error",
+          "You must be logged in to send connection requests."
+        );
         navigation.navigate("DoctorDashboard");
         return;
       }
 
+      const userRef = collection(db, "users");
+      const userQuery = query(
+        userRef,
+        where("email", "==", foundPatient.email)
+      );
+      const userSnapshot = await getDocs(userQuery);
+      if (userSnapshot.empty) {
+        // user not found
+        Alert.alert(
+          "Error",
+          "Could not find patient's authentication details."
+        );
+        return;
+      }
+
+      const patientAuthUid = userSnapshot.docs[0].id;
       // Find the doctor's document
       const doctorsRef = collection(db, "doctors");
       const q = query(doctorsRef, where("email", "==", currentUser.email));
@@ -109,21 +130,23 @@ const ConnectPatient = () => {
       }
 
       const doctorDoc = querySnapshot.docs[0];
+      const doctorData = doctorDoc.data();
 
-      // Update the doctor's connectedPatients array
-      await updateDoc(doc(db, "doctors", doctorDoc.id), {
-        connectedPatients: arrayUnion(foundPatient.id),
-      });
-
-      // Optional: Update the patient's document to add the doctor
-      const patientDocRef = doc(db, "users", foundPatient.id);
-      await updateDoc(patientDocRef, {
-        connectedDoctors: arrayUnion(doctorDoc.id),
+      // Create a connection request
+      await addDoc(collection(db, "connectionRequests"), {
+        patientId: patientAuthUid,
+        patientEmail: foundPatient.email,
+        doctorId: doctorDoc.id,
+        doctorName: doctorData.name,
+        doctorEmail: doctorData.email,
+        status: "pending",
+        createdAt: serverTimestamp(),
       });
 
       Alert.alert(
-        "Success",
-        `You are now connected with ${foundPatient.name}`,
+        "Connection Request Sent",
+        `A connection request has been sent to ${foundPatient.name}. 
+        They will need to accept the request to establish the connection.`,
         [
           {
             text: "OK",
@@ -132,8 +155,11 @@ const ConnectPatient = () => {
         ]
       );
     } catch (error: any) {
-      console.error("Error connecting with patient:", error);
-      Alert.alert("Error", "Failed to connect with patient. Please try again.");
+      console.error("Error sending connection request:", error);
+      Alert.alert(
+        "Error",
+        "Failed to send connection request. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -160,8 +186,7 @@ const ConnectPatient = () => {
 
         <View style={styles.contentContainer}>
           <Text style={styles.instructionText}>
-            Enter the patient's email address to connect and view their health
-            data.
+            Enter the patient's email address to send a connection request.
           </Text>
 
           {/* Search Input */}
@@ -202,7 +227,7 @@ const ConnectPatient = () => {
 
               <TouchableOpacity
                 style={styles.connectButton}
-                onPress={connectWithPatient}
+                onPress={sendConnectionRequest}
                 disabled={loading}
               >
                 {loading ? (
@@ -215,7 +240,7 @@ const ConnectPatient = () => {
                       color="#FFFFFF"
                       style={styles.connectIcon}
                     />
-                    <Text style={styles.connectButtonText}>Connect</Text>
+                    <Text style={styles.connectButtonText}>Send Request</Text>
                   </>
                 )}
               </TouchableOpacity>
