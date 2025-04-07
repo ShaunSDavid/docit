@@ -13,7 +13,7 @@ import {
   Alert,
 } from "react-native";
 const { width } = Dimensions.get("window");
-import { useNavigation } from "@react-navigation/native";
+import { Link, useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { FIREBASE_AUTH } from "@/FirebaseConfig";
 import {
@@ -29,6 +29,7 @@ import {
   arrayUnion,
 } from "firebase/firestore";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { MaterialIcons } from "@expo/vector-icons";
 
 type RootStackParamList = {
   Home: undefined;
@@ -39,6 +40,7 @@ type RootStackParamList = {
   EditInfo: undefined;
   Map: undefined;
   Chatbot: undefined;
+  SOS: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "Dashboard">;
@@ -344,6 +346,9 @@ const Dashboard = () => {
       {/* Header Section */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Dashboard</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("SOS")} style={{paddingHorizontal: 20, }}>
+            <MaterialIcons name="sos" size={25} color="black" />
+        </TouchableOpacity>
         {connectionRequests.length > 0 && (
           <TouchableOpacity
             style={styles.connectionBadge}

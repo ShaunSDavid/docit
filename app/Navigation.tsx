@@ -14,6 +14,7 @@ import ConnectPatient from "./_components/doctor/ConnectPatient";
 import PatientDetails from "./_components/doctor/PatientDetails";
 import DoctorProfile from "./_components/doctor/DoctorProfile";
 import EditProfile from "./_components/doctor/EditProfile";
+import SOSButton from "./_components/dashboard/SOS";
 import DoctorMessages from "./_components/profile/DoctorMessages";
 import SensorDataScreen from "./_components/dashboard/MPU";
 
@@ -42,6 +43,7 @@ const EntryNavigation = () => {
       <Stack.Screen name="ProfilePage" component={ProfilePage} />
       <Stack.Screen name="EditInfo" component={EditInfo} />
       <Stack.Screen name="Map" component={MapScreen} />
+      <Stack.Screen name="SOS" component={SOSButton} />
       <Stack.Screen name="DoctorMessages" component={DoctorMessages} />
     </Stack.Navigator>
   );

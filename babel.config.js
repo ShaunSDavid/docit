@@ -1,7 +1,21 @@
-module.exports = function (api) {
+// module.exports = function (api) {
+//   api.cache(true);
+//   return {
+//     presets: ["babel-preset-expo"],
+//     plugins: [["module:react-native-dotenv"]],
+//   };
+// };
+module.exports = function(api) {
   api.cache(true);
   return {
-    presets: ["babel-preset-expo"],
-    plugins: [["module:react-native-dotenv"]],
+    presets: ['babel-preset-expo'],
+    plugins: [
+      ['module:react-native-dotenv', {
+        "moduleName": "@env",
+        "path": ".env",
+        "safe": true,
+        "allowUndefined": false
+      }]
+    ]
   };
 };
