@@ -11,12 +11,13 @@ import {
   Image,
 } from "react-native";
 const { width } = Dimensions.get("window");
-import { useNavigation } from "@react-navigation/native";
+import { Link, useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { FIREBASE_AUTH } from "@/FirebaseConfig";
 // Uncomment this when you have Firebase database set up
 // import { getDatabase, ref, onValue } from "firebase/database";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { MaterialIcons } from "@expo/vector-icons";
 
 type RootStackParamList = {
   Home: undefined;
@@ -27,6 +28,7 @@ type RootStackParamList = {
   EditInfo: undefined;
   Map: undefined;
   Chatbot: undefined;
+  SOS: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "Dashboard">;
@@ -103,6 +105,9 @@ const Dashboard = () => {
       {/* Header Section */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Dashboard</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("SOS")} style={{paddingHorizontal: 20, }}>
+            <MaterialIcons name="sos" size={25} color="black" />
+        </TouchableOpacity>
       </View>
 
       {/* Health Metrics Cards */}
