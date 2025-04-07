@@ -40,7 +40,7 @@ const LoginScreen = () => {
     setLoading(true);
     try {
       const response = await signInWithEmailAndPassword(auth, email, password);
-      navigation.navigate("MPU");
+      navigation.navigate("Dashboard");
     } catch (error: any) {
       alert("Signin failed: " + error.message);
     } finally {

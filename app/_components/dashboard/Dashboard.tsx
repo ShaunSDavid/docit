@@ -69,6 +69,39 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
+    const fetchHealthData = () => {
+      const currentUser = FIREBASE_AUTH.currentUser;
+      if (!currentUser || !currentUser.email) {
+        console.log("No current user found");
+        return;
+      }
+
+      const db = getFirestore();
+      const healthDataRef = doc(db, "healthData", currentUser.email);
+
+      const unsubscribe = onSnapshot(
+        healthDataRef,
+        (doc) => {
+          if (doc.exists()) {
+            const data = doc.data();
+            setHealthData({
+              heartRate: data.heartRate || "No data available",
+              bloodPressure: data.bloodPressure || "No data available",
+              bloodOxygen: data.bloodOxygen || "No data available",
+              bloodGlucose: data.bloodGlucose || "No data available",
+            });
+            console.log("Health data updated:", data);
+          }
+        },
+        (error) => {
+          console.error("Error fetching health data:", error);
+        }
+      );
+
+      return unsubscribe;
+    };
+    const healthUnsubscribe = fetchHealthData();
+
     const fetchConnectionRequests = async () => {
       const currentUser = FIREBASE_AUTH.currentUser;
       if (!currentUser) {
@@ -114,7 +147,12 @@ const Dashboard = () => {
         }
       );
 
-      return () => unsubscribe();
+      return () => {
+        if (healthUnsubscribe) {
+          healthUnsubscribe();
+        }
+        unsubscribe();
+      };
     };
 
     fetchConnectionRequests();
