@@ -14,12 +14,9 @@ import ConnectPatient from "./_components/doctor/ConnectPatient";
 import PatientDetails from "./_components/doctor/PatientDetails";
 import DoctorProfile from "./_components/doctor/DoctorProfile";
 import EditProfile from "./_components/doctor/EditProfile";
-<<<<<<< HEAD
 import SOSButton from "./_components/dashboard/SOS";
-=======
 import DoctorMessages from "./_components/profile/DoctorMessages";
 import SensorDataScreen from "./_components/dashboard/MPU";
->>>>>>> 04f922f4766ad100028d95678dd392586619122f
 
 const Stack = createStackNavigator();
 
@@ -46,11 +43,8 @@ const EntryNavigation = () => {
       <Stack.Screen name="ProfilePage" component={ProfilePage} />
       <Stack.Screen name="EditInfo" component={EditInfo} />
       <Stack.Screen name="Map" component={MapScreen} />
-<<<<<<< HEAD
       <Stack.Screen name="SOS" component={SOSButton} />
-=======
       <Stack.Screen name="DoctorMessages" component={DoctorMessages} />
->>>>>>> 04f922f4766ad100028d95678dd392586619122f
     </Stack.Navigator>
   );
 };
