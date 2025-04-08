@@ -345,26 +345,31 @@ const Dashboard = () => {
 
       {/* Header Section */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Dashboard</Text>
-        <TouchableOpacity
-          onPress={() => navigation.navigate("SOS")}
-          style={{ paddingHorizontal: 20 }}
-        >
-          <MaterialIcons name="sos" size={25} color="black" />
-        </TouchableOpacity>
-        {connectionRequests.length > 0 && (
-          <TouchableOpacity
-            style={styles.connectionBadge}
-            onPress={() => setConnectionRequestModalVisible(true)}
-          >
-            <Text style={styles.connectionBadgeText}>
-              {connectionRequests.length}
-            </Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Dashboard</Text>
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("SOS")}
+              style={styles.sosButton}
+            >
+              <MaterialIcons name="sos" size={20} color="white" />
+            </TouchableOpacity>
+            {connectionRequests.length > 0 && (
+              <View style={styles.connectionBadgeContainer}>
+                <TouchableOpacity
+                  style={styles.connectionBadge}
+                  onPress={() => setConnectionRequestModalVisible(true)}
+                >
+                  <Text style={styles.connectionBadgeText}>
+                    {connectionRequests.length}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
       </View>
 
-      {/* Rest of the existing dashboard code remains the same */}
       {/* Health Metrics Cards */}
       <View style={styles.metricsContainer}>
         {healthMetrics.map((metric) => (
@@ -455,10 +460,30 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     paddingHorizontal: 20,
   },
+  headerContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   headerTitle: {
     fontSize: 21,
     fontWeight: "bold",
     color: "#FFFFFF",
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  sosButton: {
+    backgroundColor: "#FF3B30",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  connectionBadgeContainer: {
+    position: "relative",
   },
   metricsContainer: {
     flex: 1,
