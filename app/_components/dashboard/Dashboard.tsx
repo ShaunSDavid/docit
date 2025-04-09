@@ -30,6 +30,7 @@ import {
 } from "firebase/firestore";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { MaterialIcons } from "@expo/vector-icons";
+import { startSensorDataCollection } from "./SensorData";
 
 type RootStackParamList = {
   Home: undefined;
@@ -64,13 +65,15 @@ const Dashboard = () => {
   const [isConnectionRequestModalVisible, setConnectionRequestModalVisible] =
     useState(false);
   const [healthData, setHealthData] = useState({
-    heartRate: "No data available",
-    bloodPressure: "No data available",
-    bloodOxygen: "No data available",
-    bloodGlucose: "No data available",
+    heartRate: "Loading...",
+    bloodPressure: "Loading...",
+    bloodOxygen: "Loading...",
+    bloodGlucose: "Loading...",
+    lastUpdated: null,
   });
-
+  const [dataUpdated, setDataUpdated] = useState(false);
   useEffect(() => {
+    const cleanupSensor = startSensorDataCollection();
     const fetchHealthData = () => {
       const currentUser = FIREBASE_AUTH.currentUser;
       if (!currentUser || !currentUser.email) {
@@ -87,10 +90,11 @@ const Dashboard = () => {
           if (doc.exists()) {
             const data = doc.data();
             setHealthData({
-              heartRate: data.heartRate || "No data available",
-              bloodPressure: data.bloodPressure || "No data available",
-              bloodOxygen: data.bloodOxygen || "No data available",
-              bloodGlucose: data.bloodGlucose || "No data available",
+              heartRate: data.heartRate || "No data",
+              bloodPressure: data.bloodPressure || "No data",
+              bloodOxygen: data.bloodOxygen || "No data",
+              bloodGlucose: data.bloodGlucose || "No data",
+              lastUpdated: data.lastUpdated || null,
             });
             console.log("Health data updated:", data);
           }
@@ -102,7 +106,6 @@ const Dashboard = () => {
 
       return unsubscribe;
     };
-    const healthUnsubscribe = fetchHealthData();
 
     const fetchConnectionRequests = async () => {
       const currentUser = FIREBASE_AUTH.currentUser;
@@ -148,16 +151,15 @@ const Dashboard = () => {
           console.error("Error fetching connection requests:", error);
         }
       );
-
-      return () => {
-        if (healthUnsubscribe) {
-          healthUnsubscribe();
-        }
-        unsubscribe();
-      };
+      return unsubscribe;
     };
+    const healthUnsubscribe = fetchHealthData();
+    const connectionUnsubscribe = fetchConnectionRequests();
 
-    fetchConnectionRequests();
+    return () => {
+      if (healthUnsubscribe) healthUnsubscribe();
+      if (cleanupSensor) cleanupSensor();
+    };
   }, []);
 
   const handleConnectionRequest = async (
@@ -394,30 +396,15 @@ const Dashboard = () => {
           </View>
         ))}
       </View>
-
-      {/* Log Out Button */}
-      <View style={styles.logoutContainer}>
-        {loading ? (
-          <ActivityIndicator size="large" color="#0F6D66" />
-        ) : (
-          <TouchableOpacity
-            style={styles.button}
-            onPress={async () => {
-              setLoading(true);
-              try {
-                await FIREBASE_AUTH.signOut();
-                navigation.replace("Login");
-              } catch (error: any) {
-                alert("Logout failed: " + error.message);
-              } finally {
-                setLoading(false);
-              }
-            }}
-          >
-            <Text style={styles.buttonText}>Logout</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      {/* Last Updated Indicator */}
+      {healthData.lastUpdated && (
+        <View style={styles.lastUpdatedContainer}>
+          <Text style={styles.lastUpdatedText}>
+            Last updated:{" "}
+            {new Date(healthData.lastUpdated).toLocaleTimeString()}
+          </Text>
+        </View>
+      )}
 
       {/* Bottom Navigation Bar */}
       <View style={styles.bottomNav}>
@@ -653,6 +640,25 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 12,
+  },
+  lastUpdatedContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 5,
+  },
+  lastUpdatedText: {
+    fontSize: 12,
+    color: "#666",
+    textAlign: "right",
+  },
+  statusContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+  },
+  statusText: {
+    fontSize: 14,
+    color: "#0F6D66",
+    textAlign: "center",
   },
 });
 
