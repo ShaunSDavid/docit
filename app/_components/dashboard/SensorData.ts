@@ -14,6 +14,9 @@ export const startSensorDataCollection = () => {
   console.log("🔄 Starting sensor data collection service...");
   
   let lastUpdateTime = Date.now();
+  let lastUpdated = new Date().toISOString();
+  let date = new Date(lastUpdated);
+  let simpleFormat = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   let isActive = true;
   let wsConnection: WebSocket | null = null;
   
@@ -56,7 +59,7 @@ export const startSensorDataCollection = () => {
                       bloodPressure: "120/80 mmHg", // Placeholder
                       bloodOxygen: "98%", // Placeholder
                       bloodGlucose: "100 mg/dL", // Placeholder
-                      lastUpdated: new Date().toISOString(),
+                      lastUpdated: simpleFormat,
                       rawGyroData: data.gyroscope,
                     },
                     { merge: true }
