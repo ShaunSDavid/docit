@@ -56,6 +56,7 @@ const PatientDetails = () => {
     bloodPressure: "Loading...",
     bloodOxygen: "Loading...",
     bloodGlucose: "Loading...",
+    motionState: "Loading...",
     lastUpdated: null,
   });
   // Message modal state
@@ -80,6 +81,7 @@ const PatientDetails = () => {
               bloodPressure: data.bloodPressure || "No data",
               bloodOxygen: data.bloodOxygen || "No data",
               bloodGlucose: data.bloodGlucose || "No data",
+              motionState: data.motionState || "No data",
               lastUpdated: data.lastUpdated || null,
             });
             console.log("Health data updated:", data);
@@ -189,29 +191,36 @@ const PatientDetails = () => {
       id: 1,
       title: "Heart Rate",
       color: "#FF4B8C",
-      data: healthData?.heartRate || "No data",
+      data: healthData.heartRate,
       icon: "❤️",
     },
     {
       id: 2,
       title: "Blood pressure",
       color: "#FFA726",
-      data: healthData.bloodPressure || "No data",
+      data: healthData.bloodPressure,
       icon: "💊",
     },
     {
       id: 3,
       title: "Blood oxygen",
       color: "#5677FC",
-      data: healthData.bloodOxygen || "No data",
+      data: healthData.bloodOxygen,
       icon: "O₂",
     },
     {
       id: 4,
       title: "Blood Glucose",
       color: "#FF4B8C",
-      data: healthData.bloodGlucose || "No data",
+      data: healthData.bloodGlucose,
       icon: "🩸",
+    },
+    {
+      id: 5,
+      title: "Motion Status",
+      color: "#4CAF50",
+      data: healthData.motionState,
+      icon: "🏃",
     },
   ];
 

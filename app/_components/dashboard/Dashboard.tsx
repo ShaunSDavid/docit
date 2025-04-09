@@ -1,4 +1,3 @@
-//
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -69,9 +68,11 @@ const Dashboard = () => {
     bloodPressure: "Loading...",
     bloodOxygen: "Loading...",
     bloodGlucose: "Loading...",
+    motionState: "Loading...",
     lastUpdated: null,
   });
   const [dataUpdated, setDataUpdated] = useState(false);
+
   useEffect(() => {
     const cleanupSensor = startSensorDataCollection();
     const fetchHealthData = () => {
@@ -94,6 +95,7 @@ const Dashboard = () => {
               bloodPressure: data.bloodPressure || "No data",
               bloodOxygen: data.bloodOxygen || "No data",
               bloodGlucose: data.bloodGlucose || "No data",
+              motionState: data.motionState || "No data",
               lastUpdated: data.lastUpdated || null,
             });
             console.log("Health data updated:", data);
@@ -227,9 +229,6 @@ const Dashboard = () => {
             connectedDoctors: arrayUnion(requestData.doctorId),
           });
         }
-        // await updateDoc(patientDocRef, {
-        //   connectedDoctors: arrayUnion(requestData.doctorId),
-        // });
 
         // Update doctor's connected patients
         const doctorDocRef = doc(db, "doctors", requestData.doctorId);
@@ -287,6 +286,13 @@ const Dashboard = () => {
       color: "#FF4B8C",
       data: healthData.bloodGlucose,
       icon: "🩸",
+    },
+    {
+      id: 5,
+      title: "Motion Status",
+      color: "#4CAF50",
+      data: healthData.motionState,
+      icon: "🏃",
     },
   ];
 
@@ -396,12 +402,12 @@ const Dashboard = () => {
           </View>
         ))}
       </View>
+
       {/* Last Updated Indicator */}
       {healthData.lastUpdated && (
         <View style={styles.lastUpdatedContainer}>
           <Text style={styles.lastUpdatedText}>
-            Last updated:{" "}
-            {new Date(healthData.lastUpdated).toLocaleTimeString()}
+            Last updated: {healthData.lastUpdated}
           </Text>
         </View>
       )}
@@ -416,10 +422,7 @@ const Dashboard = () => {
           <Text style={styles.navText}>Chatbot</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.navButton}
-          // Dashboard is already active, no navigation needed
-        >
+        <TouchableOpacity style={styles.navButton}>
           <FontAwesome name="home" size={24} color="#0F6D66" />
           <Text style={styles.activeNavText}>Dashboard</Text>
         </TouchableOpacity>

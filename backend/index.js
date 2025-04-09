@@ -24,7 +24,7 @@ const mqttClient = mqtt.connect(config);
 
 mqttClient.on("connect", () => {
   console.log("✅ Connected to HiveMQ Cloud MQTT Broker");
-  mqttClient.subscribe("mpu6050/data", (err) => {
+  mqttClient.subscribe("sensors/data", (err) => {
     if (err) {
       console.error("❌ Subscription error:", err);
     } else {
