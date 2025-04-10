@@ -16,12 +16,14 @@ app.use(express.json());
 // ✅ Call with dynamic message
 app.post("/call", async (req, res) => {
   const message = req.body.message || "This is a default emergency message.";
-  const twimlUrl = `https://resqdemo-6615.twil.io/dynamic-voice?message=${encodeURIComponent(message)}`;
+  const twimlUrl = `https://resqdemo-6615.twil.io/dynamic-voice?message=${encodeURIComponent(
+    message
+  )}`;
 
   try {
     const call = await client.calls.create({
       url: twimlUrl,
-      to: "+919943375656",
+      to: "+918484926697",
       from: "+19516217901",
     });
     res.json({ success: true, callSid: call.sid });
@@ -70,6 +72,6 @@ app.post("/sms", async (req, res) => {
   }
 });
 
-app.listen(3000, () =>
-  console.log(`Server running at http://${ip.address()}:3000`)
+app.listen(3001, () =>
+  console.log(`Server running at http://${ip.address()}:3001`)
 );

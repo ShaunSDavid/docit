@@ -21,6 +21,7 @@ import {
   collection,
   addDoc,
   serverTimestamp,
+  onSnapshot,
 } from "firebase/firestore";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 
@@ -35,14 +36,6 @@ type PatientDetailsScreenRouteProp = RouteProp<
 >;
 type NavigationProp = StackNavigationProp<RootStackParamList, "PatientDetails">;
 
-type HealthData = {
-  heartRate?: string;
-  bloodPressure?: string;
-  bloodOxygen?: string;
-  bloodGlucose?: string;
-  updatedAt?: string;
-};
-
 const PatientDetails = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<PatientDetailsScreenRouteProp>();
@@ -54,22 +47,59 @@ const PatientDetails = () => {
     name: string;
     email: string;
     age?: string;
-    gender?: string;
-    condition?: string;
-    healthData?: HealthData;
+    height?: string;
+    weight?: string;
   } | null>(null);
 
+  const [healthData, setHealthData] = useState({
+    heartRate: "Loading...",
+    bloodPressure: "Loading...",
+    bloodOxygen: "Loading...",
+    bloodGlucose: "Loading...",
+    motionState: "Loading...",
+    lastUpdated: null,
+  });
   // Message modal state
   const [messageModalVisible, setMessageModalVisible] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
-    const fetchPatientDetails = async () => {
+    const fetchHealthData = () => {
+      const currentUser = patientId;
+
+      const db = getFirestore();
+      const healthDataRef = doc(db, "healthData", patientId);
+
+      const unsubscribe = onSnapshot(
+        healthDataRef,
+        (doc) => {
+          if (doc.exists()) {
+            const data = doc.data();
+            setHealthData({
+              heartRate: data.heartRate || "No data",
+              bloodPressure: data.bloodPressure || "No data",
+              bloodOxygen: data.bloodOxygen || "No data",
+              bloodGlucose: data.bloodGlucose || "No data",
+              motionState: data.motionState || "No data",
+              lastUpdated: data.lastUpdated || null,
+            });
+            console.log("Health data updated:", data);
+          }
+        },
+        (error) => {
+          console.error("Error fetching health data:", error);
+        }
+      );
+
+      return unsubscribe;
+    };
+
+    const fetchPatientDetail = async () => {
       try {
         // Add debugging logs
+        fetchHealthData();
         console.log("Attempting to fetch details for patient ID:", patientId);
-
         if (!patientId) {
           throw new Error("Patient ID is undefined or empty");
         }
@@ -90,15 +120,8 @@ const PatientDetails = () => {
             name: data.name || "Unknown",
             email: data.email || "No email",
             age: data.age || "N/A",
-            gender: data.gender || "Not specified",
-            condition: data.condition || "Not specified",
-            healthData: data.healthData || {
-              heartRate: "No data",
-              bloodPressure: "No data",
-              bloodOxygen: "No data",
-              bloodGlucose: "No data",
-              updatedAt: "Never",
-            },
+            height: data.height || "Not specified",
+            weight: data.weight || "Not specified",
           });
         } else {
           console.log("Patient document does not exist");
@@ -116,7 +139,7 @@ const PatientDetails = () => {
       }
     };
 
-    fetchPatientDetails();
+    fetchPatientDetail();
   }, [patientId]);
 
   const handleSendMessage = async () => {
@@ -168,29 +191,36 @@ const PatientDetails = () => {
       id: 1,
       title: "Heart Rate",
       color: "#FF4B8C",
-      data: patient?.healthData?.heartRate || "No data",
+      data: healthData.heartRate,
       icon: "❤️",
     },
     {
       id: 2,
       title: "Blood pressure",
       color: "#FFA726",
-      data: patient?.healthData?.bloodPressure || "No data",
+      data: healthData.bloodPressure,
       icon: "💊",
     },
     {
       id: 3,
       title: "Blood oxygen",
       color: "#5677FC",
-      data: patient?.healthData?.bloodOxygen || "No data",
+      data: healthData.bloodOxygen,
       icon: "O₂",
     },
     {
       id: 4,
       title: "Blood Glucose",
       color: "#FF4B8C",
-      data: patient?.healthData?.bloodGlucose || "No data",
+      data: healthData.bloodGlucose,
       icon: "🩸",
+    },
+    {
+      id: 5,
+      title: "Motion Status",
+      color: "#4CAF50",
+      data: healthData.motionState,
+      icon: "🏃",
     },
   ];
 
@@ -230,17 +260,17 @@ const PatientDetails = () => {
                 <Text style={styles.detailValue}>{patient?.age}</Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Gender</Text>
-                <Text style={styles.detailValue}>{patient?.gender}</Text>
+                <Text style={styles.detailLabel}>Weight</Text>
+                <Text style={styles.detailValue}>{patient?.weight}</Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Condition</Text>
-                <Text style={styles.detailValue}>{patient?.condition}</Text>
+                <Text style={styles.detailLabel}>Height</Text>
+                <Text style={styles.detailValue}>{patient?.height}</Text>
               </View>
               <View style={styles.detailItem}>
                 <Text style={styles.detailLabel}>Last Updated</Text>
                 <Text style={styles.detailValue}>
-                  {patient?.healthData?.updatedAt || "Never"}
+                  {healthData.lastUpdated || "Never"}
                 </Text>
               </View>
             </View>

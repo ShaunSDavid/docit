@@ -1,4 +1,3 @@
-//
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -30,6 +29,7 @@ import {
 } from "firebase/firestore";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { MaterialIcons } from "@expo/vector-icons";
+import { startSensorDataCollection } from "./SensorData";
 
 type RootStackParamList = {
   Home: undefined;
@@ -64,13 +64,51 @@ const Dashboard = () => {
   const [isConnectionRequestModalVisible, setConnectionRequestModalVisible] =
     useState(false);
   const [healthData, setHealthData] = useState({
-    heartRate: "No data available",
-    bloodPressure: "No data available",
-    bloodOxygen: "No data available",
-    bloodGlucose: "No data available",
+    heartRate: "Loading...",
+    bloodPressure: "Loading...",
+    bloodOxygen: "Loading...",
+    bloodGlucose: "Loading...",
+    motionState: "Loading...",
+    lastUpdated: null,
   });
+  const [dataUpdated, setDataUpdated] = useState(false);
 
   useEffect(() => {
+    const cleanupSensor = startSensorDataCollection();
+    const fetchHealthData = () => {
+      const currentUser = FIREBASE_AUTH.currentUser;
+      if (!currentUser || !currentUser.email) {
+        console.log("No current user found");
+        return;
+      }
+
+      const db = getFirestore();
+      const healthDataRef = doc(db, "healthData", currentUser.email);
+
+      const unsubscribe = onSnapshot(
+        healthDataRef,
+        (doc) => {
+          if (doc.exists()) {
+            const data = doc.data();
+            setHealthData({
+              heartRate: data.heartRate || "No data",
+              bloodPressure: data.bloodPressure || "No data",
+              bloodOxygen: data.bloodOxygen || "No data",
+              bloodGlucose: data.bloodGlucose || "No data",
+              motionState: data.motionState || "No data",
+              lastUpdated: data.lastUpdated || null,
+            });
+            console.log("Health data updated:", data);
+          }
+        },
+        (error) => {
+          console.error("Error fetching health data:", error);
+        }
+      );
+
+      return unsubscribe;
+    };
+
     const fetchConnectionRequests = async () => {
       const currentUser = FIREBASE_AUTH.currentUser;
       if (!currentUser) {
@@ -115,11 +153,15 @@ const Dashboard = () => {
           console.error("Error fetching connection requests:", error);
         }
       );
-
-      return () => unsubscribe();
+      return unsubscribe;
     };
+    const healthUnsubscribe = fetchHealthData();
+    const connectionUnsubscribe = fetchConnectionRequests();
 
-    fetchConnectionRequests();
+    return () => {
+      if (healthUnsubscribe) healthUnsubscribe();
+      if (cleanupSensor) cleanupSensor();
+    };
   }, []);
 
   const handleConnectionRequest = async (
@@ -187,9 +229,6 @@ const Dashboard = () => {
             connectedDoctors: arrayUnion(requestData.doctorId),
           });
         }
-        // await updateDoc(patientDocRef, {
-        //   connectedDoctors: arrayUnion(requestData.doctorId),
-        // });
 
         // Update doctor's connected patients
         const doctorDocRef = doc(db, "doctors", requestData.doctorId);
@@ -247,6 +286,13 @@ const Dashboard = () => {
       color: "#FF4B8C",
       data: healthData.bloodGlucose,
       icon: "🩸",
+    },
+    {
+      id: 5,
+      title: "Motion Status",
+      color: "#4CAF50",
+      data: healthData.motionState,
+      icon: "🏃",
     },
   ];
 
@@ -307,23 +353,31 @@ const Dashboard = () => {
 
       {/* Header Section */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Dashboard</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("SOS")} style={{paddingHorizontal: 20, }}>
-            <MaterialIcons name="sos" size={25} color="black" />
-        </TouchableOpacity>
-        {connectionRequests.length > 0 && (
-          <TouchableOpacity
-            style={styles.connectionBadge}
-            onPress={() => setConnectionRequestModalVisible(true)}
-          >
-            <Text style={styles.connectionBadgeText}>
-              {connectionRequests.length}
-            </Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Dashboard</Text>
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("SOS")}
+              style={styles.sosButton}
+            >
+              <MaterialIcons name="sos" size={20} color="white" />
+            </TouchableOpacity>
+            {connectionRequests.length > 0 && (
+              <View style={styles.connectionBadgeContainer}>
+                <TouchableOpacity
+                  style={styles.connectionBadge}
+                  onPress={() => setConnectionRequestModalVisible(true)}
+                >
+                  <Text style={styles.connectionBadgeText}>
+                    {connectionRequests.length}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
       </View>
 
-      {/* Rest of the existing dashboard code remains the same */}
       {/* Health Metrics Cards */}
       <View style={styles.metricsContainer}>
         {healthMetrics.map((metric) => (
@@ -349,29 +403,14 @@ const Dashboard = () => {
         ))}
       </View>
 
-      {/* Log Out Button */}
-      <View style={styles.logoutContainer}>
-        {loading ? (
-          <ActivityIndicator size="large" color="#0F6D66" />
-        ) : (
-          <TouchableOpacity
-            style={styles.button}
-            onPress={async () => {
-              setLoading(true);
-              try {
-                await FIREBASE_AUTH.signOut();
-                navigation.replace("Login");
-              } catch (error: any) {
-                alert("Logout failed: " + error.message);
-              } finally {
-                setLoading(false);
-              }
-            }}
-          >
-            <Text style={styles.buttonText}>Logout</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      {/* Last Updated Indicator */}
+      {healthData.lastUpdated && (
+        <View style={styles.lastUpdatedContainer}>
+          <Text style={styles.lastUpdatedText}>
+            Last updated: {healthData.lastUpdated}
+          </Text>
+        </View>
+      )}
 
       {/* Bottom Navigation Bar */}
       <View style={styles.bottomNav}>
@@ -383,10 +422,7 @@ const Dashboard = () => {
           <Text style={styles.navText}>Chatbot</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.navButton}
-          // Dashboard is already active, no navigation needed
-        >
+        <TouchableOpacity style={styles.navButton}>
           <FontAwesome name="home" size={24} color="#0F6D66" />
           <Text style={styles.activeNavText}>Dashboard</Text>
         </TouchableOpacity>
@@ -414,10 +450,30 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     paddingHorizontal: 20,
   },
+  headerContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   headerTitle: {
     fontSize: 21,
     fontWeight: "bold",
     color: "#FFFFFF",
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  sosButton: {
+    backgroundColor: "#FF3B30",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  connectionBadgeContainer: {
+    position: "relative",
   },
   metricsContainer: {
     flex: 1,
@@ -587,6 +643,25 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 12,
+  },
+  lastUpdatedContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 5,
+  },
+  lastUpdatedText: {
+    fontSize: 12,
+    color: "#666",
+    textAlign: "right",
+  },
+  statusContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+  },
+  statusText: {
+    fontSize: 14,
+    color: "#0F6D66",
+    textAlign: "center",
   },
 });
 

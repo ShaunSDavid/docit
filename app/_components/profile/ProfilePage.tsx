@@ -8,6 +8,7 @@ import {
   Modal,
   Pressable,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { Link, useRouter } from "expo-router";
 
@@ -36,6 +37,7 @@ const ProfilePage = () => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [username, setUsername] = useState<string | null>(" ");
   const [fetching, setFetching] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -197,7 +199,29 @@ const ProfilePage = () => {
           </Text>
         </TouchableOpacity>
       </View>
-
+      {/* Log Out Button */}
+      <View style={styles.logoutContainer}>
+        {loading ? (
+          <ActivityIndicator size="large" color="#0F6D66" />
+        ) : (
+          <TouchableOpacity
+            style={styles.button}
+            onPress={async () => {
+              setLoading(true);
+              try {
+                await FIREBASE_AUTH.signOut();
+                navigation.replace("Login");
+              } catch (error: any) {
+                alert("Logout failed: " + error.message);
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            <Text style={styles.buttonText}>Logout</Text>
+          </TouchableOpacity>
+        )}
+      </View>
       <View style={styles.bottomNav}>
         <TouchableOpacity
           style={styles.navButton}
@@ -336,5 +360,21 @@ const styles = StyleSheet.create({
     color: "#0F6D66",
     fontWeight: "bold",
     marginTop: 4,
+  },
+  logoutContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  button: {
+    width: "100%",
+    padding: 15,
+    backgroundColor: "#0F6D66",
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

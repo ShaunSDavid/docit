@@ -39,7 +39,7 @@ const EntryNavigation = () => {
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="Dashboard" component={Dashboard} />
-      <Stack.Screen name="MPU" component={SensorDataScreen} />
+      {/* <Stack.Screen name="MPU" component={SensorDataScreen} /> */}
       <Stack.Screen name="ProfilePage" component={ProfilePage} />
       <Stack.Screen name="EditInfo" component={EditInfo} />
       <Stack.Screen name="Map" component={MapScreen} />

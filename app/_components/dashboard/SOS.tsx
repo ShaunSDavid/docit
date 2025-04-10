@@ -56,9 +56,15 @@ export default function SOSButton() {
       const smsData = await smsResponse.json();
 
       if (callData.success && smsData.success) {
-        Alert.alert("Emergency Triggered", `📞 Call SID: ${callData.callSid}\n📩 SMS SID: ${smsData.sid}`);
+        Alert.alert(
+          "Emergency Triggered",
+          `📞 Call SID: ${callData.callSid}\n📩 SMS SID: ${smsData.sid}`
+        );
       } else {
-        Alert.alert("Error", `Call: ${callData.error || "OK"}\nSMS: ${smsData.error || "OK"}`);
+        Alert.alert(
+          "Error",
+          `Call: ${callData.error || "OK"}\nSMS: ${smsData.error || "OK"}`
+        );
       }
     } catch (error: any) {
       Alert.alert("Request Failed", error.message || "Unknown error");
