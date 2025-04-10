@@ -1,10 +1,14 @@
+import express from "express";
+import twilio from "twilio";
+import axios from "axios";
+import ip from "ip";
+import dotenv from "dotenv";
+
+dotenv.config();
+
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
-
-const express = require("express");
-const client = require("twilio")(accountSid, authToken);
-const axios = require("axios");
-const ip = require("ip");
+const client = twilio(accountSid, authToken);
 
 const app = express();
 app.use(express.json());
@@ -27,17 +31,38 @@ app.post("/call", async (req, res) => {
   }
 });
 
-// ✅ SMS with editable message
+// ✅ SMS with editable message + optional location
 app.post("/sms", async (req, res) => {
   const to = "+919943375656";
-  const message = req.body.message || "This is a default SMS emergency message.";
+  let { message, latitude, longitude } = req.body;
 
   try {
+    let address = "";
+    if (latitude && longitude) {
+      const geoResponse = await axios.get("https://nominatim.openstreetmap.org/reverse", {
+        params: {
+          lat: latitude,
+          lon: longitude,
+          format: "json",
+        },
+        headers: {
+          "User-Agent": "resqmat-emergency-app"
+        }
+      });
+
+      address = geoResponse.data.display_name || "";
+    }
+
+    const finalMessage = address
+      ? `${message}\n\nPatient's Last Known Location:\n${address}`
+      : message;
+
     const sms = await client.messages.create({
-      body: message,
+      body: finalMessage,
       to,
       from: "+19516217901",
     });
+
     res.json({ success: true, sid: sms.sid });
   } catch (error) {
     console.error("SMS error:", error.message);
