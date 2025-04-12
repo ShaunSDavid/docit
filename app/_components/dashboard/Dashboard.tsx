@@ -65,9 +65,7 @@ const Dashboard = () => {
     useState(false);
   const [healthData, setHealthData] = useState({
     heartRate: "Loading...",
-    bloodPressure: "Loading...",
     bloodOxygen: "Loading...",
-    bloodGlucose: "Loading...",
     motionState: "Loading...",
     lastUpdated: null,
   });
@@ -92,9 +90,7 @@ const Dashboard = () => {
             const data = doc.data();
             setHealthData({
               heartRate: data.heartRate || "No data",
-              bloodPressure: data.bloodPressure || "No data",
               bloodOxygen: data.bloodOxygen || "No data",
-              bloodGlucose: data.bloodGlucose || "No data",
               motionState: data.motionState || "No data",
               lastUpdated: data.lastUpdated || null,
             });
@@ -268,27 +264,13 @@ const Dashboard = () => {
     },
     {
       id: 2,
-      title: "Blood pressure",
-      color: "#FFA726",
-      data: healthData.bloodPressure,
-      icon: "💊",
-    },
-    {
-      id: 3,
       title: "Blood oxygen",
       color: "#5677FC",
       data: healthData.bloodOxygen,
       icon: "O₂",
     },
     {
-      id: 4,
-      title: "Blood Glucose",
-      color: "#FF4B8C",
-      data: healthData.bloodGlucose,
-      icon: "🩸",
-    },
-    {
-      id: 5,
+      id: 3,
       title: "Motion Status",
       color: "#4CAF50",
       data: healthData.motionState,
