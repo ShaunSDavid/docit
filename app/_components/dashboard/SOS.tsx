@@ -1,40 +1,58 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, TouchableOpacity, Text, Alert } from "react-native";
+import * as Location from "expo-location";
 import Constants from "expo-constants";
 
 export default function SOSButton() {
-  const makeEmergencyCall = async () => {
-    try {
-      // @ts-ignore: debuggerHost exists only in Expo Go development mode
-      const debuggerHost =
-        Constants.manifest2?.extra?.expoClient?.hostUri ||
-        Constants.manifest?.debuggerHost;
-      const devIP = debuggerHost?.split(":")[0];
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
-      if (!devIP) {
-        throw new Error("Could not determine local IP address.");
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission denied", "Location permission is required for emergency location sharing.");
+        return;
       }
 
-      const message =
-        "Your patient might be in dire need of an emergency, Please respond immediately";
-      const backendBaseURL = `http://${devIP}:3001`;
+      const loc = await Location.getCurrentPositionAsync({});
+      setLocation({
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+      });
+    })();
+  }, []);
 
-      // Trigger Call
+  const makeEmergencyCall = async () => {
+    try {
+      // @ts-ignore
+      const debuggerHost = Constants.manifest2?.extra?.expoClient?.hostUri || Constants.manifest?.debuggerHost;
+      const devIP = debuggerHost?.split(":")[0];
+
+      if (!devIP) throw new Error("Could not determine local IP address.");
+
+      const backendBaseURL = `http://${devIP}:3000`;
+      const message = "Your patient might be in dire need of an emergency, Please respond immediately";
+
+      // Call
       const callResponse = await fetch(`${backendBaseURL}/call`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message }),
       });
-
       const callData = await callResponse.json();
 
-      // Trigger SMS
+      // SMS
+      const smsPayload = {
+        message,
+        latitude: location?.latitude,
+        longitude: location?.longitude,
+      };
+
       const smsResponse = await fetch(`${backendBaseURL}/sms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify(smsPayload),
       });
-
       const smsData = await smsResponse.json();
 
       if (callData.success && smsData.success) {
@@ -48,12 +66,8 @@ export default function SOSButton() {
           `Call: ${callData.error || "OK"}\nSMS: ${smsData.error || "OK"}`
         );
       }
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        Alert.alert("Request Failed", error.message);
-      } else {
-        Alert.alert("Request Failed", "An unknown error occurred.");
-      }
+    } catch (error: any) {
+      Alert.alert("Request Failed", error.message || "Unknown error");
     }
   };
 
