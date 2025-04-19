@@ -46,7 +46,7 @@ export const startSensorDataCollection = () => {
     if (!isActive) return;
     
     try {
-      wsConnection = new WebSocket("ws://192.168.0.106:3000");
+      wsConnection = new WebSocket("ws://192.168.1.3:3000");
       
       wsConnection.onopen = () => {
         console.log("✅ Connected to WebSocket Server");
