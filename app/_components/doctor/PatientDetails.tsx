@@ -24,6 +24,8 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { FIREBASE_AUTH } from "@/FirebaseConfig";
+import MedicalHistoryModal from "./MedicalHistoryModal";
 
 type RootStackParamList = {
   DoctorDashboard: undefined;
@@ -42,6 +44,8 @@ const PatientDetails = () => {
   const { patientId } = route.params;
 
   const [loading, setLoading] = useState(true);
+  const [medicalHistoryModalVisible, setMedicalHistoryModalVisible] =
+    useState(false);
   const [patient, setPatient] = useState<{
     id: string;
     name: string;
@@ -153,10 +157,11 @@ const PatientDetails = () => {
 
     try {
       const db = getFirestore();
+      const currentUser = FIREBASE_AUTH.currentUser;
 
       // Get the current doctor's email (assuming it's stored somewhere, possibly in auth)
       // For now, I'll use a placeholder - you should replace this with actual doctor info
-      const doctorEmail = "doc@gmail.com"; // Replace with actual authenticated doctor email
+      const doctorEmail = currentUser?.email; // Replace with actual authenticated doctor email
 
       // Add the message to a messages collection
       await addDoc(collection(db, "messages"), {
@@ -305,8 +310,14 @@ const PatientDetails = () => {
               <Text style={styles.actionButtonText}>Message Patient</Text>
             </TouchableOpacity>
 
+            <MedicalHistoryModal
+              isVisible={medicalHistoryModalVisible}
+              onClose={() => setMedicalHistoryModalVisible(false)}
+              patientEmail={patient?.email || ""}
+            />
             <TouchableOpacity
               style={[styles.actionButton, styles.secondaryButton]}
+              onPress={() => setMedicalHistoryModalVisible(true)}
             >
               <FontAwesome
                 name="file-text-o"
