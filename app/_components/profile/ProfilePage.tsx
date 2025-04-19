@@ -28,6 +28,7 @@ type RootStackParamList = {
   Dashboard: undefined;
   Chatbot: undefined;
   DoctorMessages: undefined;
+  DiagnosticHistory: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "ProfilePage">;
@@ -193,6 +194,7 @@ const ProfilePage = () => {
             flexDirection: "row",
             alignItems: "center",
           }}
+          onPress={() => navigation.navigate("DiagnosticHistory")}
         >
           <Text style={{ fontSize: 16, color: "#333" }}>
             Diagnostics History
