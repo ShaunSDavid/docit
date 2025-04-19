@@ -46,7 +46,7 @@ const HomeScreen = () => {
             style={styles.logo}
             resizeMode="contain"
           />
-          <Text style={styles.appName}>ResQmate</Text>
+          <Text style={styles.appName}>DocIT</Text>
           <Text style={styles.tagline}>Let's rescue Lives</Text>
         </View>
       ) : (
